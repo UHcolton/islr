@@ -1,0 +1,256 @@
+---
+title: "Homework 5"
+author: "Colton Baker"
+format: docx
+editor: visual
+---
+
+```{r warning=FALSE, echo=FALSE}
+library(MASS)
+library(boot)
+library(splines)
+library(ISLR)
+library(tree)
+attach(Boston)
+attach(OJ)
+```
+
+## Problem 1
+
+a\)
+
+```{r}
+set.seed(123)
+#Use the poly() function to fit a cubic polynomial regression to predict nox using dis.
+fit = lm(nox ~ poly(dis, 3), data = Boston)
+
+#Report the regression output
+coef(summary(fit))
+
+# plot the resulting data and polynomial fits
+dislims = range(dis)
+dis.grid = seq(from = dislims[1], to = dislims[2])
+preds = predict(fit, newdata = list(dis = dis.grid), se = TRUE)
+se.bands = cbind(preds$fit + 2 * preds$se.fit, preds$fit - 2 * preds$se.fit )
+plot(dis, nox, xlim = dislims, cex = .5, col = "darkgrey")
+#plot(nox ~ dis, data = Boston, col = 'gray')
+#lines(disgrd, pred_lm, col = 'blue', lwd = 2)
+title("Degree-3 Polynomial with SE")
+lines(dis.grid, preds$fit, lwd = 2, col = "blue")
+matlines(dis.grid, se.bands, lwd = 1, col = "blue", lty = 3)
+```
+
+b\)
+
+```{r}
+set.seed(123)
+#Plot the polynomial fits for a range of different polynomial degrees (say, from 1 to 10)
+rss = seq(1, 10, by = 1)
+
+for (i in 1:10) {
+  fit.lm = lm(nox ~ poly(dis, i), data = Boston)
+  rss[i] = sum(fit.lm$residuals^2)
+}
+
+plot(1:10, rss, xlab='Degree of Polynomial', ylab='Residual Sum of Squares', type='b', main='Degree of Polynomial vs RSS')
+axis(1, at = seq(1,10, by=1))
+#report the associated residual sum of squares
+data.frame(Degree = c(1:10), RSS = rss)
+```
+
+c\)
+
+```{r}
+set.seed(123)
+#Perform cross-validation or another approach to select the optimal degree for the 
+#polynomial
+cv.error <- seq(1,10, by = 1)
+
+for (i in 1:10) {
+  poly.fit <- glm(nox ~ poly(dis, i), data=Boston)
+  cv.error[i] <- cv.glm(Boston, poly.fit, K=10)$delta[1]
+}
+
+plot(x=1:10, y=cv.error,xlab='Degree Polynomial',ylab='CV MSE', type='b', main='CV MSE vs Degree of Polynomial')
+points(x=which.min(cv.error), y=min(cv.error), col = 'blue', pch=20)
+
+```
+
+After running 10-Fold Cross Validation, the resulting cross validation mean squared errors are displayed. From this we see that a degree-3 polynomial is the optimal fit since the CV MSE is minimized at that point.
+
+d\)
+
+```{r}
+set.seed(123)
+# Use the bs() function to fit a regression spline to predict nox using dis. Report the output for the fit using four degrees of freedom.
+bs.fit = lm(nox ~ bs(dis, df = 4), data = Boston)
+summary(bs.fit)
+
+#Plot the resulting fit.
+plot(dis, nox, col="grey", pch=20)
+lines(smooth.spline(dis, predict(bs.fit)), col="blue", lwd=2)
+```
+
+**How did you choose the knots?**
+
+Since a cubic spline has $K+4$ degrees of freedom choosing $K=0$ gives us $4$ degrees of freedom. Therefore no knots were chosen, and if need be the bs() function will handle them internally.
+
+e\)
+
+```{r warning=FALSE}
+set.seed(123)
+
+df_values = 4:17
+rss_values = numeric(length(df_values))
+
+
+plot(dis, nox, col="grey", pch=20)
+
+for (i in seq_along(df_values)) {
+  bs.fit2 = lm(nox ~ bs(dis, df = i), data = Boston)
+  rss_values[i] = sum(bs.fit2$residuals^2)
+  
+  dis_seq <- seq(min(dis), max(dis), length.out=300)
+  lines(dis_seq, predict(bs.fit2, newdata=data.frame(dis=dis_seq)), col=i, lwd=1.5)
+}
+
+plot(df_values, rss_values, type="b", pch=20, xlab="Degrees of Freedom", ylab="RSS",
+     main="RSS for Regression Splines vs Degrees of Freedom")
+points(x=17, y=min(rss_values), col = 'red', pch=20)
+
+
+```
+
+**Describe the results obtained.**
+
+It seems that as the degrees of freedom increase the RSS decreases but settles somewhere around $1.8$.
+
+f\)
+
+```{r}
+dis.jittered <- jitter(dis, amount = 0.00025)
+fit.loocv = smooth.spline(dis.jittered, nox, cv = TRUE)
+cat("Optimal degrees of freedom chosen by LOOCV (with jitter):", fit.loocv$df, "\n")
+
+plot(dis, nox, col="grey", pch=20,
+     xlab="Distance to Employment Centers (dis)", ylab="Nitrogen Oxides Concentration (nox)",
+     main=paste("Smooth Spline Fit (LOOCV, df =", round(fit.loocv$df, 2), ")"))
+
+# Add the fitted smooth spline line
+lines(fit.loocv, col="blue", lwd=2)
+```
+
+Since cross validation relies on splitting the data and evaluating predictions for unique $x$, I added a jitter to "dis" offsetting the distribution slightly but allowing for unique estimated values that are very close to the original values. Another approach may have been to replace duplicates with the mean. Either way this should allow the cross validation to have more reliable results.
+
+After LOOCV, the optimal degrees of freedom seems to be around $16.39$.
+
+## Problem 2
+
+**Majority Vote Method:**
+
+If $P(Red|X)>0.5$ then we classify as red else green Since the majority vote, $\frac{6}{10}$, is red we the final classifcation is **red**.
+
+**Average Method:**
+
+Using the same logic as before, if $P(Red|X) > 0.5$ then the classification is red. Taking the average we have $\sum_{i=1}^{10}p_i=0.45<0.5$ so the final classification is **green**.
+
+## Problem 3
+
+a\)
+
+```{r}
+#Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations
+set.seed(123)
+
+train_index = sample(1:nrow(OJ), 800) 
+
+oj_train = OJ[train_index, ]
+oj_test = OJ[-train_index, ]
+```
+
+b\) The tree has 8 terminal nodes.
+
+```{r}
+set.seed(123)
+#Fit a tree to the training data, with Purchase as the response and the other variables as predictors.
+oj_tree = tree(Purchase ~., data = oj_train)
+
+#Use the summary() function to produce summary statistics about the tree, and describe the results obtained. What is the training error rate?
+
+summary(oj_tree)
+```
+
+c\) **Terminal node 9 interpretation:**
+
+-   114 observations where LoyalCH \> 0.0356415 (the split condition)
+
+-   A deviance of 108.90 which is moderate in comparison
+
+-   12.941% in favor of Citrus Hill and 87.059% in favor of Minute Maid
+
+```{r}
+#Type in the name of the tree object in order to get a detailed text output. Pick one of the terminal nodes, and interpret the information displayed. 
+
+oj_tree
+```
+
+d\) Loyalty is evaluated by calculating the proportion of purchases going to either Citrus Hill (CH) or Minute Maid (MM). The root node is split by customers who are loyal to CH 50.36% of the time.
+
+On the left hand side, those who purchase CH between 3.56% and 27.61% of the time may be more likely to purchase MM. Those who purchase CH between 27.61% and 50.36% of the time may be more likely to purchase MM unless the price difference is greater than or equal to \$0.05 in which they may be more likely to purchase CH. So if CH cost less then MM customers may be more likely to buy CH.
+
+On the right hand side, if MM cost less than CH by \$0.39, the choice is MM. Otherwise, despite the condition, the choice is CH which is intuitive since they usually purchase CH.
+
+The splits at price difference indicate that even a small flucuation in price may sway customers to choose a different brand.
+
+```{r}
+#Create a plot of the tree, and interpret the results. 
+
+plot(oj_tree)
+text(oj_tree, pretty = 0)
+```
+
+e\) Test error rate is $\frac{16 + 34}{270}=0.1852$ or 18.52%.
+
+```{r}
+
+predict_oj = predict(oj_tree, oj_test, type = "class")
+table(predict_oj, oj_test$Purchase)
+```
+
+f\)
+
+```{r}
+set.seed(123)
+cv_oj = cv.tree(oj_tree, FUN = prune.misclass)
+cv_oj
+```
+
+g\)
+
+```{r}
+plot(cv_oj$size, cv_oj$dev, xlab = 'Tree Size', ylab = 'CV Classification Error Rate', type = 'b')
+```
+
+h\) Tree size of 5 corresponds with the lowest cross-validated classification error rate.
+
+i\)
+
+```{r}
+oj_pruned = prune.misclass(oj_tree, best = 5)
+plot(oj_pruned)
+text(oj_pruned, pretty = 0)
+```
+
+j\) The training error rates, 16.5%, are exactly the same in both trees.
+
+```{r}
+summary(oj_pruned)
+```
+
+k\) The test error rates, 18.52%, is exactly the same in both trees.
+
+```{r}
+
+predict_oj_pruned = predict(oj_pruned, oj_test, type = "class")
+table(predict_oj_pruned, oj_test$Purchase)
+```

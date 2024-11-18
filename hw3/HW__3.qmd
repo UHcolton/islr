@@ -1,0 +1,385 @@
+---
+title: "Homework 3"
+format: pdf
+editor: visual
+header-includes:
+  - \usepackage{soul}
+  - \input{c:/texlive/2024/texmf-dist/tex/generic/soul/soul.sty}
+---
+
+## Problem 1
+
+Assuming the response $Y$ and the predictor $X$ are non empty vectors with $n\ge2$, to then estimate the standard deviation we can use the bootstrap method.
+
+From the original data set, we repeatedly draw bootstrap samples of size $n$ , with replacement. This creates a set $S=\{Z^{*1},\ Z^{*2},..., Z^{*B}\}$ with $| \ S\ |=B$ and where each $Z^{*r}$ represents a bootstrapped dataset. For each $Z^{*r}$ we fit our model and compute the prediction $\hat{Y}^{*r}$ for $X$. We can then estimate the standard deviation, or standard error, by
+
+1.  $$ \text{SE}_B(\hat{Y})=\sqrt{\frac{1}{B-1}\sum_{r=1}^{B}\left(\hat{Y}^{*r}-\frac{1}{B}\sum_{r'=1}^{B}\hat{Y}^{*r'}\right)^2} $$
+
+## Problem 2
+
+a\)
+
+```{r}
+library(ISLR2)
+attach(Default)
+set.seed(6350)
+glm.fit = glm(default ~ income + balance, 
+               data = Default, 
+               family = "binomial")
+summary(glm.fit)
+```
+
+b\)
+
+```{r}
+#i
+set.seed(6350)
+
+train.index = sample(1:nrow(Default), size=0.5*nrow(Default))
+train.set = Default[train.index, ]
+validation.set = Default[-train.index, ]
+
+#ii
+glm.fit = glm(default ~ income + balance, 
+               data = train.set, 
+               family = "binomial")
+summary(glm.fit)
+
+#iii
+glm.probs = predict(glm.fit, 
+                 newdata = validation.set, 
+                 type = 'response')
+glm.pred = rep('No', nrow(validation.set))
+glm.pred[glm.probs > 0.5] = 'Yes'
+
+#iv
+table(glm.pred, validation.set$default)
+cat('\n')
+glm.test_err = mean(glm.pred != validation.set$default)
+cat('GLM Error Rate: ', glm.test_err * 100,'%')
+```
+
+c\)
+
+```{r}
+# repeat 1
+set.seed(1)
+
+train.index = sample(1:nrow(Default), size=0.5*nrow(Default))
+train.set = Default[train.index, ]
+validation.set = Default[-train.index, ]
+
+glm.fit = glm(default ~ income + balance, 
+               data = train.set, 
+               family = "binomial")
+
+glm.probs = predict(glm.fit, 
+                 newdata = validation.set, 
+                 type = 'response')
+
+glm.pred = rep('No', nrow(validation.set))
+glm.pred[glm.probs > 0.5] = 'Yes'
+glm.test_err = mean(glm.pred != validation.set$default)
+cat('GLM Error Rate varied: ', glm.test_err * 100,'%')
+```
+
+```{r}
+# repeat 2
+set.seed(2)
+train.index = sample(1:nrow(Default), size=0.5*nrow(Default))
+train.set = Default[train.index, ]
+validation.set = Default[-train.index, ]
+
+glm.fit = glm(default ~ income + balance, 
+               data = train.set, 
+               family = "binomial")
+
+glm.probs = predict(glm.fit, 
+                 newdata = validation.set, 
+                 type = 'response')
+
+glm.pred = rep('No', nrow(validation.set))
+glm.pred[glm.probs > 0.5] = 'Yes'
+glm.test_err = mean(glm.pred != validation.set$default)
+cat('GLM Error Rate varied: ', glm.test_err * 100,'%')
+```
+
+```{r}
+# repeat 3
+set.seed(3)
+train.index = sample(1:nrow(Default), size=0.5*nrow(Default))
+train.set = Default[train.index, ]
+validation.set = Default[-train.index, ]
+
+glm.fit = glm(default ~ income + balance, 
+               data = train.set, 
+               family = "binomial")
+
+glm.probs = predict(glm.fit, 
+                 newdata = validation.set, 
+                 type = 'response')
+
+glm.pred = rep('No', nrow(validation.set))
+glm.pred[glm.probs > 0.5] = 'Yes'
+glm.test_err = mean(glm.pred != validation.set$default)
+cat('GLM Error Rate varied: ', glm.test_err * 100,'%')
+
+```
+
+```{r}
+x1 = 2.72
+x2 = 2.54
+x3 = 2.38
+x4 = 2.64
+
+X = c(x1, x2, x3, x4)
+
+mean(X)
+var(X)
+sd(X)
+```
+
+After splitting 4 times, the validation set test error rate varies by $0.0215\%$.
+
+$\left(\mu,\ \sigma\right)=(2.57, \ 0.1465)$ The inconsistency here is due to the observations being randomly put into either the training or validation set during the splits.
+
+d\)
+
+```{r}
+set.seed(5)
+dummy.student = ifelse(Default$student == 'No', 0, 1)
+dummy.df = data.frame(Default, dummy.student)
+#dummy.student <- 29.44% of students yes
+dummy.index = sample(1:nrow(dummy.df), size = 0.5 * nrow(dummy.df))
+dummy.train.set = dummy.df[dummy.index, ]
+dummy.validation.set = dummy.df[-dummy.index, ]
+
+
+dummy.glm.fit = glm(default ~ income + balance + dummy.student, 
+               data = dummy.train.set, 
+               family = "binomial")
+summary.glm(dummy.glm.fit)
+
+dummy.glm.probs = predict(dummy.glm.fit,
+                          newdata = dummy.validation.set,
+                          type = 'response')
+dummy.glm.pred = rep('No', nrow(dummy.validation.set))
+dummy.glm.pred[dummy.glm.probs > 0.5] = 'Yes'
+dummy.test.err = mean(dummy.glm.pred != dummy.validation.set$default)
+cat('GLM Error Rate varied: ', dummy.test.err * 100,'%')
+```
+
+Adding the dummy student variable doesn't seem to vary the test error rate by much more than the previous models.\
+
+## Problem 3
+
+a\)
+
+```{r}
+set.seed(42)
+
+glm.fit.q3 = glm(default ~ income + balance, 
+               data = Default, 
+               family = "binomial")
+summary(glm.fit.q3)
+
+standard.errors = c(4.348e-0, 4.985e-06, 2.274e-04)
+```
+
+b\) and c)
+
+```{r}
+library(boot)
+
+boot.fn <- function(data, index) {
+  fit <- glm(default ~ income + balance, data = data, family = "binomial", subset = index)
+  return(coef(fit))
+}
+
+cat(boot.fn(Default, train.index))
+
+boot_result <- boot(Default, boot.fn, 1000)
+boot_result
+
+```
+
+d\) Comments
+
+The difference in standard error for Default at Income and Balance from the glm to boot.fn is insignificant. The difference in standard error for the intercepts is larger which is to be expected with points around zero.
+
+## Problem 4
+
+a\) In the data set, $(n,\ p)=(100,\ 2)$ where $X$ and $X^2$ are the predictors and $Y$ is the response.
+
+The equation for the model: $Y=X - 2X^2 + \epsilon$
+
+```{r}
+set.seed(1)
+X = rnorm(100)
+Y = X - 2 * X^2 + rnorm(100)
+
+data.xy = data.frame(X, Y)
+# length(data.xy$X) == 100
+# length(data.xy$X) == 100
+```
+
+b\)
+
+```{r}
+plot(X, Y)
+```
+
+[Comments:]{.underline}
+
+The data is non-linear with a parabolic shape. There appears to be dense clusters near the vertex.
+
+c\)
+
+```{r}
+library(boot)
+glm.xy1 = glm(Y ~ X)
+loocv1 = cv.glm(data = data.xy, glmfit = glm.xy1)
+
+
+glm.xy2 = glm(Y ~ poly(X, 2))
+loocv2 = cv.glm(data = data.xy, glmfit = glm.xy2)
+
+
+glm.xy3 = glm(Y ~ poly(X, 3))
+loocv3 = cv.glm(data = data.xy, glmfit = glm.xy3)
+
+
+glm.xy4 = glm(Y ~ poly(X, 4))
+loocv4 = cv.glm(data = data.xy, glmfit = glm.xy4)
+
+loocv1$delta[1]
+loocv2$delta[1]
+loocv3$delta[1]
+loocv4$delta[1]
+```
+
+d\) New random seed:
+
+```{r}
+set.seed(22)
+glm.xy1. = glm(Y ~ X)
+loocv1. = cv.glm(data = data.xy, glmfit = glm.xy1)
+
+
+glm.xy2. = glm(Y ~ poly(X, 2))
+loocv2. = cv.glm(data = data.xy, glmfit = glm.xy2)
+
+
+glm.xy3. = glm(Y ~ poly(X, 3))
+loocv3. = cv.glm(data = data.xy, glmfit = glm.xy3)
+
+
+glm.xy4. = glm(Y ~ poly(X, 4))
+loocv4. = cv.glm(data = data.xy, glmfit = glm.xy4)
+
+loocv1.$delta[1]
+loocv2.$delta[1]
+loocv3.$delta[1]
+loocv4.$delta[1]
+```
+
+The error before and after changing the random seed is exactly the same. This is due to LOOCV using the entire data set for evaluation of the model.
+
+e\) The model with the lowest error was in model 2. This is expected since this is model is quadratic matching the parabolic nature of the data. The cubic and quartic models are likely over-fitting the data
+
+f\)
+
+```{r}
+summary.glm(glm.xy1)
+summary.glm(glm.xy2)
+summary.glm(glm.xy3)
+summary.glm(glm.xy4)
+```
+
+The second model, the quadratic model with the lowest LOOCV error, has the most stastistically significant coefficients. The cubic and quartic models are likely over-fitting the data and thus have hold no significance. The second model has the "best" bias-variance trade-off.
+
+## Problem 5
+
+a\)
+
+```{r}
+library(ISLR2)
+Boston = Boston
+medv= Boston$medv
+mu.hat = sum(medv) / length(medv)
+mu.hat
+```
+
+b\)
+
+```{r}
+se.mu.hat = sd(medv) / sqrt(length(medv))
+se.mu.hat
+```
+
+c\)
+
+```{r}
+set.seed(22)
+boot.fn.mu = function(data, index) {
+  mu.boots = sum(data[index]) / length(data[index])
+  return(mu.boots)
+}
+results = boot(medv, boot.fn.mu, 1000)
+results
+```
+
+[Comment:]{.underline} A few runs without setting seed gave varied values of the standard error.
+
+d\)
+
+```{r}
+# Ill construct the the CI from the formula
+
+CI.mu.hat = mu.hat + c(-2, 2) * se.mu.hat
+t.conf.int = t.test(medv)$conf.int
+
+abs(CI.mu.hat[1] - t.conf.int[1])
+```
+
+[Comment:]{.underline} The bootstrap confidence interval and the t.test confidence interval are very close in value.
+
+e\) and f)
+
+```{r}
+og = median(medv)
+boot.median = function(data, index) {
+  return(median(data[index]))
+}
+
+set.seed(1)
+boot.results = boot(data = medv, statistic = boot.median, R = 1000)
+se.median = sd(boot.results$t)
+
+cat('The actaul median is', og)
+boot.results
+se.median
+
+```
+
+The bootstrap gives a great estimate of the standard error of the median. It shows how much the median might vary across samples, and it's usually a bit higher than the mean's standard error because the median is less affected by outliers.
+
+g\) and h)
+
+```{r}
+mu.hat.10 <- quantile(medv, 0.1)
+mu.hat.10
+
+boot.mu.hat.10 = function(data, index) {
+  return(quantile(data[index], 0.1))
+}
+
+set.seed(22)
+boot.results.quant = boot(data = medv, statistic = boot.mu.hat.10, R = 1000)
+se.quant = sd(boot.results.quant$t)
+
+boot.results.quant
+se.quant
+```
+
+Comment: With the bootstrap, we get an estimated $10\text{th}$ percentile value of $12.75$, a standard error of $0.5113$. This small standard error, compared to the percentile value of $12.75$, indicates that the estimate is fairly precise.

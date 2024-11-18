@@ -1,0 +1,139 @@
+---
+title: "Homework 6"
+format: docx
+editor: visual
+---
+
+```{r warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(ISLR2)
+library(e1071)
+library(magrittr)
+data('Auto')
+attach(Auto)
+```
+
+## Problem 1
+
+**This problem involves hyperplanes in two dimensions.**
+
+a\. Sketch the hyperplane $1 + 3x_1 − x_2 = 0$. Indicate the set of points for which $1 + 3x_1 − x_2 > 0$, as well as the set of points for which $1 + 3x_1 − x_2 < 0$.
+
+**INSERT GRAPH**
+
+$$
+\begin{aligned}
+1+3x_1-x_2>0 &\iff 1+3x_1 > x_2 \\
+1+3x_1-x_2<0 &\iff 1+3x_1 < x_2
+\end{aligned}
+$$
+
+The above statements specify the conditions that are both necessary and sufficient to determine the respective set of points.
+
+b\. On the same plot, sketch the hyperplane $−2 + x_1 + 2x_2 = 0$. Indicate the set of points for which $−2 + x_1 + 2x_2 > 0$, as well as the set of points for which $−2 + x_1 + 2x_2 < 0$.
+
+**INSERT GRAPH**
+
+$$
+\begin{aligned}
+−2 + x_1 + 2x_2 >0 &\iff −1 + \frac{1}{2}x_1 > x_2 \\
+−2 + x_1 + 2x_2 <0 &\iff −1 + \frac{1}{2}x_1 < x_2 
+\end{aligned}
+$$
+
+The above statements specify the conditions that are both necessary and sufficient to determine the respective set of points.
+
+## Problem 2
+
+**We have seen that in p = 2 dimensions, a linear decision boundary takes the form** $\beta_0+\beta_1x_1+\beta_2x_2=0$**. We now investigate a non-linear decision boundary.**
+
+a\. Sketch the curve $(1+x_1)^2 + (2-x_2)^2 = 4$
+
+INSERT GRAPH
+
+b\. On your sketch, indicate the set of points for which $(1+x_1)^2 + (2-x_2)^2 > 4$ as well as the set of points for which $(1+x_1)^2 + (2-x_2)^2 \le 4$.
+
+**INSERT GRAPHS**
+
+| Point     | Color |
+|-----------|-------|
+| $(0,0)$   | Blue  |
+| $(-1, 1)$ | Red   |
+| $(2,2)$   | Blue  |
+| $(3,8)$   | Blue  |
+
+\(d\) Argue that while the decision boundary in (c) is not linear in terms of $x_1$ and $x_2$ it is linear in terms of $x_1, x_12, x_2, x_2$.
+
+Expanding $f(x_1, x_2)$:
+
+$$
+f(x_1, x_2)=(1+x_1)^2+(2-x_2)^2=x_1^2-x_2^2+2x_1-4x_2+5
+$$
+
+which is **non-linear** in terms of $x_1$ and $x_2$ but is a **linear combination** of $x_1, x_1^2, x_2, x_2^2$.
+
+## Problem 3
+
+**Here we explore the maximal margin classifier on a toy data set.**
+
+a\. We are given $n = 7$ observations in $p = 2$ dimensions. For each observation, there is an associated class label.
+
+```{r echo=FALSE}
+x1 = c(3, 2, 4, 1, 2, 4, 4)
+x2 = c(4, 2, 4, 4, 1, 3, 1)
+y = c('Red', 'Red', 'Red', 'Red', 'Blue', 'Blue', 'Blue')
+df = data.frame(x1, x2, y)
+print(df)
+```
+
+a\. Sketch the observations.
+
+**INSERT GRAPH**
+
+b\. Sketch the optimal separating hyperplane, and provide the equation for this hyperplane
+
+**INSERT GRAPH**
+
+The equation for the hyperplane:
+
+$$
+\frac{1}{2}+X_2-X_1=0
+$$
+
+c\. Describe the classification rule for the maximal margin classifier.
+
+Classify to **Red** if $\frac{1}{2}+(1)(X_2)-(1)(X_1)>0$ , else classify to **Blue.** \$ {\beta\_0, \beta\_1, \beta\_2}={\frac{1}{2}, 1, 1} \$
+
+d\. On your sketch, indicate the margin for the maximal margin hyperplane.
+
+**INSERT GRAPH**
+
+e\. Indicate the support vectors for the maximal margin classifier.
+
+$s_1 = \begin{bmatrix} 2 \\ 2 \end{bmatrix},s_2 = \begin{bmatrix} 4 \\ 4 \end{bmatrix}, s_3 = \begin{bmatrix} 2 \\ 1 \end{bmatrix}, s_4 = \begin{bmatrix} 4 \\ 3 \end{bmatrix}$
+
+**INSERT GRAPH**
+
+f\. Argue that a slight movement of the seventh observation would not affect the maximal margin hyperplane.
+
+The maximal margin hyperplane is defined by the support vectors. Support vectors are those which lie on or within the margin and have the minimum perpendicular distance from the hyperplane. Since observation seven does not fall on or within the margin, it is not a support vector and will not affect the maximal margin hyperplane with any slight movement.
+
+## Problem 4
+
+**In this problem, you will use support vector approaches in order to predict whether a given car gets high or low gas mileage based on the Auto data set.**
+
+a\. Create a binary variable that takes on a 1 for cars with gas mileage above the median, and a 0 for cars with gas mileage below the median.
+
+```{r}
+mpg01 = ifelse(mpg > median(mpg), 1, 0)
+Auto_copy = data.frame(Auto, mpg01)
+Auto_copy
+```
+
+b\. Fit a support vector classifier to the data with various values of cost, in order to predict whether a car gets high or low gas mileage.
+
+```{r}
+set.seed(123)
+svmfit = svm(mpg01 ~., Auto_copy)
+summary(svmfit)
+```

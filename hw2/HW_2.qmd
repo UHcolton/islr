@@ -1,0 +1,278 @@
+---
+title: "Homework 2"
+author: "Colton Baker"
+format: 
+  pdf:
+    fig-align: center
+    execute:
+      warning: false
+    documentclass: article
+    fontsize: 12pt
+    geometry: "margin=1in"
+editor: visual
+---
+
+## Homework 2
+
+1.  **When the number of features p is large, there tends to be a deterioration in the performance of KNN and other local approaches that perform prediction using only observations that are near the test observation for which a prediction must be made. This phenomenon is known as the curse of dimensionality, and it ties into the fact that non-parametric approaches often perform poorly when p is large. We will now investigate this curse.**
+
+    -   a\) The fraction of the available observations we will use to make the prediction is $\frac{k}{n}=0.1$
+
+        where $k$ is the available observations and $n$ is the total observations.
+
+    -   b\) The fraction of the available observations we will use to make the prediction is $(\frac{k}{n})^2={(0.1)}^2$
+
+        where $k$ is the available observations and $n$ is the total observations.
+
+    -   c\) The fraction of the available observations we will use to make the prediction is $(\frac{k}{n})^{100}=(0.1)^{100}$
+
+        where $k$ is the available observations and $n$ is the total observations.
+
+    -   d\) A drawback to using KNN with many features is that $\frac{k}{n}\rightarrow{0}$ as $p\rightarrow{\infty}$ meaning the size of the neighborhood $N(x)$ around any given training observation decreases, $N(x)\rightarrow{0}$ as $p\rightarrow{\infty}$ , which in turn allows fewer and fewer observations for the training observation to be tested against as the number of dimensions grows i.e. the curse of dimensionality.
+
+        In the case of $p=1$ you are using $10\%$ of the test data.
+
+        In the case of $p=2$ you are using $1\%$ of the test data.
+
+        In the case of $p=100$ you are using basically $0\%$ of the test data.
+
+    -   e\) Since the size of the neighborhood shrinks as $p\rightarrow{\infty}$ yet we still want to capture $10\%$ of the data when we multiply the lengths of the sides we still need the "volume" inside the hypercube to be 0.1. In general the as $p$ increase the side lenghth increases by $(\frac{k}{n})^{\frac{1}{p}}$.
+
+        -   For $p=1$: $(\frac{k}{n})^{\frac{1}{1}}=\frac{k}{n}=0.1$
+        -   For $p=2$ : $(\frac{k}{n})^{\frac{1}{2}}=\sqrt{0.1}=0.3162278$
+        -   For $p=100$: $(\frac{k}{n})^{\frac{1}{100}}=\sqrt[100]{0.1}=0.9772372$
+        -   If we think about the *density:*
+            -   The mass would be the 10% of data points we want to keep
+            -   The volume of the hypercube then shrinks has the side lengths become larger
+
+2.  **Suppose we collect data for a group of students in a statistics class with variables X1 =hours studied, X2 =undergrad GPA, and Y =receive an A. We fit a logistic regression and produce estimated coefficient,** $\hat{\beta_0}=-6\space,\hat{\beta_1}=0.05\space,\hat{\beta_2}=1\space$
+
+    -   a\) The model and estimation:
+
+        -   $$
+            \begin{aligned}
+            \log\left(\frac{p(X)}{1 - p(X)}\right) &= -6 + 0.05 \times (\text{hours studied}) + 1 \times (\text{undergrad GPA}) \\  &= -6 + 0.05 \times 40 + 1 \times 3.5 \\  &= -0.5 \\\\\hat{p}(X) &= \frac{e^{-0.5}}{1 + e^{-0.5}} \\\\
+            \therefore\hat{p}(X) &= 0.3775407
+            \end{aligned}
+            $$
+
+    -   b\) $p(X)=0.5$:
+
+        -   $$
+            \begin{aligned}
+            \log\left(\frac{0.5}{1-0.5}\right)&= -6 + 0.05 \times (\text{hours studied}) + 1 \times (\text{undergrad GPA})\\\\
+            0&=-6 + 0.05 \times (\text{hours studied}) + 1 \times (\text{undergrad GPA})\\\\
+            \text{hours studied} &= \frac{6\space+\space1\times\text{undergrad GPA}}{0.05}\\\\
+            \text{hours studied} &= \frac{6\space+\space\text{3.5}}{0.05}\\\\
+            \text{hours studied} &= 50
+            \end{aligned}
+            $$
+
+3.  **In this problem, you will develop a model to predict whether a given car gets high or low gas mileage based on the Auto data set.**
+
+    ```{r}
+    # 3a
+
+    library(ISLR2)
+    data('Auto')
+    median(Auto$mpg)
+    mpg01 <- ifelse(Auto$mpg > median(Auto$mpg), 1, 0)
+    Auto <- cbind(Auto, mpg01)
+    ```
+
+    ```{r}
+    # 3b
+    # intuitively using features that would affect mpg origin and name left out
+    plot(Auto$mpg, col='orange')
+    hist(Auto$mpg)
+    boxplot(Auto$displacement ~ Auto$mpg01, 
+            col=c("lightblue","orange"),
+            xlab='MPG Class',
+            ylab='displacement')
+    boxplot(Auto$horsepower ~ Auto$mpg01, 
+            col=c("lightblue","orange"),
+            xlab='MPG Class',
+            ylab='horsepower')
+    boxplot(Auto$weight ~ Auto$mpg01, 
+            col=c("lightblue","orange"),
+            xlab='MPG Class',
+            ylab='weight')
+    boxplot(Auto$acceleration ~ Auto$mpg01, 
+            col=c("lightblue","orange"),
+            xlab='MPG Class',
+            ylab='acceleration')
+    boxplot(Auto$year ~ Auto$mpg01, 
+            col=c("lightblue","orange"),
+            xlab='MPG Class',
+            ylab='year')
+
+    ```
+
+    The disparity in the distributions between displacement and mpg01 , horsepower and mpg01, and weight and mpg01 suggest that these features separate the classes well. This gives us reason to believe these features are most likely to be useful in predicting mpg01.
+
+    ```{r}
+
+    plot(Auto$displacement, Auto$horsepower,
+         col = ifelse(Auto$mpg01 == 1, "orange", "lightblue"),
+         pch = 19,
+         xlab = "Displacement",
+         ylab = "Horsepower",
+         main = "Displacement vs Horsepower")
+    plot(Auto$weight, Auto$horsepower,
+         col = ifelse(Auto$mpg01 == 1, "orange", "lightblue"),
+         pch = 19,
+         xlab = "Weight",
+         ylab = "Horsepower",
+         main = "Weight vs Horsepower")
+    plot(Auto$displacement, Auto$weight,
+         col = ifelse(Auto$mpg01 == 1, "orange", "lightblue"),
+         pch = 19,
+         xlab = "Displacement",
+         ylab = "Weigth",
+         main = "Displacement vs Weigth")
+    ```
+
+    The scatter plots above show the relationship of each contending feature based upon their classification. Typically we would investigate the outliers from each to see how they affect our data overall.
+
+    ```{r}
+    # 3c) split data
+    set.seed(6350)
+
+    train_index = sample(1:nrow(Auto), size=0.7*nrow(Auto))
+
+    train_auto = Auto[train_index, ]
+    test_auto = Auto[-train_index, ]
+
+    # gut check
+    nrow(train_auto) + nrow(test_auto)
+    ```
+
+    Now that the data is split we can perform LDA, QDA, logistic regression, Naive Bayes, and KNN:
+
+    ```{r}
+    # 3d) LDA
+    library(MASS)
+    lda.fit = lda(mpg01 ~ displacement + horsepower + weight,
+                  data = train_auto)
+    lda.fit
+    lda_predictions = predict(lda.fit, newdata = test_auto)
+    table(lda_predictions$class, test_auto$mpg01)
+    lda_test_err = mean(lda_predictions$class != test_auto$mpg01)
+
+    cat('LDA Error Rate: ', lda_test_err * 100,'%')
+    ```
+
+    ```{r}
+    # 3e) QDA
+    library(MASS)
+    qda.fit = qda(mpg01 ~ displacement + horsepower + weight,
+                  data = train_auto)
+    qda.fit
+    qda_predictions = predict(qda.fit, newdata = test_auto)
+    table(qda_predictions$class, test_auto$mpg01)
+    qda_test_err = mean(qda_predictions$class != test_auto$mpg01)
+
+    cat('QDA Error Rate: ', qda_test_err * 100,'%')
+    ```
+
+    ```{r}
+    library(MASS)
+    # 3f) Logistic Regression
+    glm.fits = glm(mpg01 ~ displacement + horsepower + weight, 
+                    data = train_auto, 
+                    family = 'binomial')
+    #summary(glm.fits)
+    glm.probs = predict(glm.fits, newdata = test_auto, type = "response")
+
+    #head(glm.probs)
+
+    glm.pred = rep(0, nrow(test_auto))
+    glm.pred[glm.probs > 0.5] = 1
+
+    table(glm.pred, test_auto$mpg01)
+    glm.test.error = mean(glm.pred != test_auto$mpg01)
+    cat('GLM Error Rate: ', glm.test.error * 100,'%')
+    ```
+
+    ```{r}
+    # 3g) Naive Baye's
+    # note: Our features are continuous
+    # this will give us the densities not the actual 
+    # probabilities.
+
+    library("e1071")
+    nb.fit = naiveBayes(mpg01 ~ displacement + horsepower + weight, 
+                        data = train_auto)
+    nb.fit
+    nb.preds = predict(nb.fit, newdata = test_auto)
+    table(nb.preds, test_auto$mpg01)
+    nb_test_err = mean(nb.preds != test_auto$mpg01)
+
+    cat('Naive Bayes Error Rate: ', nb_test_err * 100,'%')
+    ```
+
+    ```{r}
+    library(class)
+    # Note since KNN is non-parametric, we must
+    # subset the predictors before assigning them within 
+    # the KNN function
+    train_X = train_auto[, c("displacement", "horsepower", "weight")]
+    test_X = test_auto[, c("displacement", "horsepower", "weight")]
+
+    error_rate_col <- c()
+    for (k in 1:10) {
+      knn_preds = knn(train = train_X, 
+                      test = test_X,
+                      cl = train_auto$mpg01,
+                      k=k)
+      error_rate = mean(knn_preds != test_auto$mpg01)
+      error_rate_col = c(error_rate_col, error_rate)
+      cat('K =', k, ': KNN Error Rates =', error_rate * 100, '%\n')
+    }
+
+    best_k = which.min(error_rate_col)
+    cat("Best K:", best_k, "\n")
+
+    # Visually we hace:
+
+    plot(1:10, error_rate_col, type = "b", col = "green", pch = 19,
+         xlab = "K Value", ylab = "Error Rate",
+         main = "KNN Error Rates for Different K Values")
+
+    ```
+
+4.  **Explain how k-fold cross-validation is implemented.**
+
+    To explain how K-Fold CV is implemented is it best to start with the Validation Set process. This splits the data into two sets, one for training and one for testing dependent upon a specific ratio. Then the model is trained on the training set and then evaluated on the test set.
+
+    This leads to LOOCV (leave-on-out) where each observation is respectively treated as a test set (i.e. leave one out *for testing*) and tested against the $K-1$training observations. Then all iterations of the models performance are averaged.
+
+    K-Fold CV is a more efficient version of LOOCV. The data is split into $K$ equal sized subsets, or *folds*. Then the model is trained on $K-1$ folds and tested on the remaining fold iterating $K$ times. Then, similar to LOOCV, all $K$ iterations of the models performance are averaged. This helps to balance the bias and variance.
+
+5.  **Using basic statistical properties of the variance, as well as single variable calculus, derive (5.6 in the textbook). In other words, prove that α given by (5.6) does indeed minimize Var(αX + (1 − α)Y ).**
+
+    For this derivation, we will use the following properties of $\text{Var}(X)$ :
+
+    -   \(a\) $\forall \ X \in \mathbb{R} \ : \text{Var}(X) \ge 0$
+
+    -   \(b\) $\forall \ (X,Y) \in \mathbb{R} \ : \text{Var}(aX + bY)=a^2\text{Var}(X)+b^2\text{Var}(Y)-2ab\text{Cov}(X,Y)$
+
+    Also, we will also use Fermat's Theorem as:
+
+    -   $\text{If} \space f(x)\ \text{has a minimum}\ x=\alpha\ \text{and}\ f \ \text{is differentiable at}\ \alpha,\ \text{then}\ f'(\alpha)=0.$
+
+        Given $\alpha$ is the value we choose to minimize the variance:
+
+        Let $f(\alpha)=\text{Var}(\alpha X+(1-a)Y)$ :
+
+        By property (b):
+
+        $$ \begin{aligned} f(\alpha)&=\alpha^2\text{Var}(X)+(1-\alpha)^2\text{Var}(Y)\ -\ 2\alpha(1-\alpha)\text{Cov}(X,Y) \\\\ f(\alpha)&=\alpha^2\text{Var}(X)+(1-\alpha)^2\text{Var}(Y)\ -\ (2\alpha-2\alpha^2)\text{Cov}(X,Y) \end{aligned} $$
+
+        Since $\text{Var}(X), \ \text{Var}(Y)$ are constant w.r.t. to $X,Y$ we can deduce:
+
+        $$ \begin{aligned} f'(\alpha)&=2\alpha\text{Var}(X)+2(1-\alpha)\text{Var}(Y)\ -\ (2-4\alpha)\text{Cov}(X,Y) \\\\ f'(\alpha)&=2\alpha\text{Var}(X)+(2-2\alpha)\text{Var}(Y)\ -\ (2-4\alpha)\text{Cov}(X,Y) \\\\ f'(\alpha)&=2\alpha\text{Var}(X)+2\text{Var}(Y)-2\alpha\text{Var}(Y)\ -\ 2\text{Cov}(X,Y)+4\alpha\text{Cov}(X,Y) \\\\ \end{aligned} $$
+
+        Let $f'(\alpha)=0$ , factor out the $2$ and by property (b):
+
+        $$ \begin{aligned} \alpha\text{Var}(X)\ +\alpha\text{Var}(Y) -2\alpha\text{Cov}(X,Y)&=\text{Var}(Y) - \text{Cov}(X,Y) \\\\ \alpha(\text{Var}(X)\ +\text{Var}(Y) -\text{Cov}(X,Y))&= \text{Var}(Y) - \text{Cov}(X,Y) \\\\ \alpha&= \frac{\text{Var}(Y) - \text{Cov}(X,Y)}{\text{Var}(X)\ +\text{Var}(Y) -\text{Cov}(X,Y)} \\\\ \therefore \alpha&= \frac{\sigma_Y^2 - \sigma_{XY}}{\sigma_X^2\ +\sigma_Y^2 -\sigma_{XY}}\\ \square \end{aligned} $$

@@ -1,0 +1,496 @@
+---
+title: "Homework 4 - Colton Baker"
+format: docx
+warning: FALSE
+message: FALSE
+editor: visual
+---
+
+### Problem 1
+
+a\) For increase in lambda, the training RSS will steadily increase since the model becomes less flexible and its ability to minimize the residuals on training data gets worse.
+
+b\) For increase in lambda, the test RSS will decrease initially then eventually increase in an inverted U shape. Since there is an optimal lambda that minimizes the test RSS yet beyond that point will increase test error.
+
+c\) For increase in lambda, the variance will steadily decrease since coefficients are shrinking causing less variance between them.
+
+d\) For increase in lambda, squared bias will steadily increase since the coefficients are shrinking causing higher squared biased between them.
+
+e\) For increase in lambda, irreducible error will remain constant since it just that, irreducible.
+
+### Problem 2
+
+a\)
+
+```{r warning=FALSE}
+library(leaps)
+library(ggplot2)
+library(glmnet)
+library(ISLR)
+library(pls)
+library(MASS)
+
+set.seed(42)
+X = rnorm(100)
+epsilon = rnorm(100)
+
+head(X)
+head(epsilon)
+```
+
+b\)
+
+```{r warning=FALSE}
+Y = 2 + 3 * X + 5 * X^2 + 8 * X^3 + epsilon
+
+head(Y)
+```
+
+c\)
+
+```{r warning=FALSE}
+set.seed(42)
+generated.data = data.frame(
+  X = X, 
+  X2 = X^2, 
+  X3 = X^3, 
+  X4 = X^4, 
+  X5 = X^5, 
+  X6 = X^6, 
+  X7 = X^7, 
+  X8 = X^8, 
+  X9 = X^9, 
+  X10 = X^10, 
+  Y = Y
+)
+
+head(generated.data)
+
+subset.fit = regsubsets(Y ~ ., data = generated.data, nvmax = 10)
+subset.summary = summary(subset.fit)
+subset.summary
+
+cp.values = subset.summary$cp
+bic.values = subset.summary$bic
+adjr2.values = subset.summary$adjr2
+
+# Cp Plot
+plot(cp.values, xlab = "Number of Predictors", ylab = "Cp", type = "b", pch = 19)
+points(which.min(cp.values), min(cp.values), col = "red", cex = 2, pch = 20)
+title("Best Subset Selection by Cp")
+
+# BIC Plot
+plot(bic.values, xlab = "Number of Predictors", ylab = "BIC", type = "b", pch = 19)
+points(which.min(bic.values), min(bic.values), col = "red", cex = 2, pch = 20)
+title("Best Subset Selection by BIC")
+
+# Adjusted R^2 Plot
+plot(adjr2.values, xlab = "Number of Predictors", ylab = "Adjusted R^2", type = "b", pch = 19)
+points(which.max(adjr2.values), max(adjr2.values), col = "red", cex = 2, pch = 20)
+title("Best Subset Selection by Adjusted R^2")
+
+# best model
+best.model.cp = coef(subset.fit, which.min(cp.values))
+best.model.bic = coef(subset.fit, which.min(bic.values))
+best.model.adjr2 = coef(subset.fit, which.max(adjr2.values))
+
+
+cat("Best model according to Cp:\n")
+print(best.model.cp)
+
+cat("\nBest model according to BIC:\n")
+print(best.model.bic)
+
+cat("\nBest model according to Adjusted R^2:\n")
+print(best.model.adjr2)
+```
+
+d\)
+
+```{r warning=FALSE}
+# Forward stepwise selection
+forward.fit = regsubsets(Y ~ ., data = generated.data, nvmax = 10, method = 'forward' )
+forward.summary = summary(forward.fit)
+
+forward.cp = forward.summary$cp
+forward.bic = forward.summary$bic
+forward.adjr2 = forward.summary$adjr2
+
+# Backward stepwaise selection
+backward.fit = regsubsets(Y ~ ., data = generated.data, nvmax = 10, method = 'backward' )
+backward.summary = summary(backward.fit)
+
+backward.cp = backward.summary$cp
+backward.bic = backward.summary$bic
+backward.adjr2 = backward.summary$adjr2
+
+# Cp Plot - Forward
+plot(forward.cp, xlab = "Number of Predictors", ylab = "Cp", type = "b", pch = 19)
+points(which.min(forward.cp), min(forward.cp), col = "red", cex = 2, pch = 20)
+title("Forward Stepwise Selection by Cp")
+
+# BIC Plot - Forward
+plot(forward.bic, xlab = "Number of Predictors", ylab = "BIC", type = "b", pch = 19)
+points(which.min(forward.bic), min(forward.bic), col = "red", cex = 2, pch = 20)
+title("Forward Stepwise Selection by BIC")
+
+# Adjusted R^2 Plot - Forward
+plot(forward.adjr2, xlab = "Number of Predictors", ylab = "Adjusted R^2", type = "b", pch = 19)
+points(which.max(forward.adjr2), max(forward.adjr2), col = "red", cex = 2, pch = 20)
+title("Forward Stepwise Selection by Adjusted R^2")
+
+
+# Cp Plot - Backward
+plot(backward.cp, xlab = "Number of Predictors", ylab = "Cp", type = "b", pch = 19)
+points(which.min(backward.cp), min(backward.cp), col = "red", cex = 2, pch = 20)
+title("Backward Stepwise Selection by Cp")
+
+# BIC Plot - Backward
+plot(backward.bic, xlab = "Number of Predictors", ylab = "BIC", type = "b", pch = 19)
+points(which.min(backward.bic), min(backward.bic), col = "red", cex = 2, pch = 20)
+title("Backward Stepwise Selection by BIC")
+
+# Adjusted R^2 Plot - Backward
+plot(backward.adjr2, xlab = "Number of Predictors", ylab = "Adjusted R^2", type = "b", pch = 19)
+points(which.max(backward.adjr2), max(backward.adjr2), col = "red", cex = 2, pch = 20)
+title("Backward Stepwise Selection by Adjusted R^2")
+
+# best model
+best.model.forward.cp = coef(forward.fit, which.min(forward.cp))
+best.model.forward.bic = coef(forward.fit, which.min(forward.bic))
+best.model.forward.adjr2 = coef(forward.fit, which.max(forward.adjr2))
+
+best.model.backward.cp = coef(backward.fit, which.min(backward.cp))
+best.model.backward.bic = coef(backward.fit, which.min(backward.bic))
+best.model.backward.adjr2 = coef(backward.fit, which.max(backward.adjr2))
+
+
+cat("Best model from Forward Stepwise according to Cp:\n")
+print(best.model.forward.cp)
+
+cat("\nBest model from Forward Stepwise according to BIC:\n")
+print(best.model.forward.bic)
+
+cat("\nBest model from Forward Stepwise according to Adjusted R^2:\n")
+print(best.model.forward.adjr2)
+
+cat("\nBest model from Backward Stepwise according to Cp:\n")
+print(best.model.backward.cp)
+
+cat("\nBest model from Backward Stepwise according to BIC:\n")
+print(best.model.backward.bic)
+
+cat("\nBest model from Backward Stepwise according to Adjusted R^2:\n")
+print(best.model.backward.adjr2)
+```
+
+Comment: The variables chosen according to the adjusted $R^2$ differ from each selection while the everything else stays the same.
+
+e\)
+
+```{r warning=FALSE}
+set.seed(42)
+predictors = as.matrix(generated.data[, 1:10])
+response = generated.data$Y
+#head(predictors)
+#head(response)
+# alpha = 1 correpsonds to lasso, l2
+lasso.fit = glmnet(predictors, response, alpha = 1)
+
+cv.lasso = cv.glmnet(predictors, response, alpha = 1)
+
+plot(cv.lasso)
+
+best.lambda = cv.lasso$lambda.min
+cat("The optimal lambda value is:", best.lambda, "\n")
+
+best.lasso.coef = coef(cv.lasso, s = "lambda.min")
+cat("Lasso Coefficients at the optimal lambda: ")
+best.lasso.coef
+```
+
+As $log(\lambda)$ increases the coefficients shrink to zero in turn performing variable selection. The MSE increases as the shrinkage term increases indicating the those particular models may not perform well on unseen data. The standard deviation of the for each $\lambda$ also increases indicating greater variability in the performance of the model across different CV folds.
+
+The coefficient estimates X4 to X10 shrink to zero indicating they are not important predictors which effectively is feature selection.
+
+The left dashed line represents the best predictive model in terms of minimizing error.
+
+The right dashed line represents a more regularized model that is simpler and might generalize better to unseen data but have less predictive power.
+
+f\)
+
+```{r warning=FALSE, echo=FALSE}
+set.seed(42)
+# new model
+Y2 = 2 + 34 * X^7 + epsilon
+generated.data$Y = Y2
+
+subset.fit2 = regsubsets(Y2 ~ ., data = generated.data, nvmax = 10)
+subset.summary2 = summary(subset.fit2)
+
+cp.values2 = subset.summary2$cp
+bic.values2 = subset.summary2$bic
+adjr2.values2 = subset.summary2$adjr2
+
+# Cp Plot
+plot(cp.values2, xlab = "Number of Predictors", ylab = "Cp", type = "b", pch = 19)
+points(which.min(cp.values2), min(cp.values2), col = "red", cex = 2, pch = 20)
+title("Best Subset Selection by Cp")
+
+# BIC Plot
+plot(bic.values2, xlab = "Number of Predictors", ylab = "BIC", type = "b", pch = 19)
+points(which.min(bic.values2), min(bic.values2), col = "red", cex = 2, pch = 20)
+title("Best Subset Selection by BIC")
+
+# Adjusted R^2 Plot
+plot(adjr2.values2, xlab = "Number of Predictors", ylab = "Adjusted R^2", type = "b", pch = 19)
+points(which.max(adjr2.values2), max(adjr2.values2), col = "red", cex = 2, pch = 20)
+title("Best Subset Selection by Adjusted R^2")
+
+
+# Best model based on Cp
+best.model.cp = coef(subset.fit, which.min(subset.summary$cp))
+cat("Best subset selection model coefficients based on Cp:\n")
+print(best.model.cp)
+
+# Best model based on BIC
+best.model.bic = coef(subset.fit, which.min(subset.summary$bic))
+cat("\nBest subset selection model coefficients based on BIC:\n")
+print(best.model.bic)
+
+# Best model based on Adjusted R^2
+best.model.adjr2 = coef(subset.fit, which.max(subset.summary$adjr2))
+cat("\nBest subset selection model coefficients based on Adjusted R^2:\n")
+print(best.model.adjr2)
+
+```
+
+```{r warning=FALSE}
+set.seed(42)
+
+lasso.fit2 = glmnet(predictors, Y2, alpha = 1)
+
+cv.lasso2 = cv.glmnet(predictors, Y2, alpha = 1)
+
+plot(cv.lasso2)
+
+best.lambda2 = cv.lasso2$lambda.min
+cat("The optimal lambda value is:", best.lambda2, "\n")
+
+best.lasso.coef2 = coef(cv.lasso2, s = "lambda.min")
+cat("Lasso Coefficients at the optimal lambda:\n")
+print(best.lasso.coef2)
+
+```
+
+Since there is only one variable to choose from the MSE is extremely low yet the CV folds still indicate which model will perform best given the increase in flexibility.
+
+### Problem 3
+
+a\)
+
+```{r warning=FALSE}
+train.index = sample(1:nrow(College), size = 0.75*nrow(College))
+train.set = College[train.index, ]
+test.set = College[-train.index, ]
+```
+
+b\)
+
+```{r warning=FALSE}
+set.seed(42)
+college.lm = lm(Apps ~ ., data = train.set)
+college.preds = predict(college.lm, test.set)
+college.errors = mean((test.set$Apps - college.preds)^2)
+
+cat("Test Error: ", college.errors)
+```
+
+c\)
+
+```{r warning=FALSE}
+set.seed(42)
+train.predictors <- as.matrix(train.set[, -which(names(train.set) == "Apps")])
+train.response <- train.set$Apps
+
+test.predictors <- as.matrix(test.set[, -which(names(test.set) == "Apps")])
+test.response <- test.set$Apps
+
+cv.ridge = cv.glmnet(train.predictors, train.response, alpha = 0)
+
+best.lambda.ridge = cv.ridge$lambda.min
+cat("The optimal lambda for Ridge:", best.lambda.ridge, "\n")
+
+ridge.preds = predict(cv.ridge, s = best.lambda.ridge, newx = test.predictors)
+
+ridge.error = mean((test.response - ridge.preds)^2)
+cat("Test Error:", ridge.error, "\n")
+
+coef(cv.ridge, s = 'lambda.min')
+coef(cv.ridge, s = 'lambda.1se')
+```
+
+```{r warning=FALSE}
+set.seed(42)
+cv.lasso = cv.glmnet(train.predictors, train.response, alpha = 1)
+
+best.lambda.lasso = cv.lasso$lambda.min
+cat("The optimal lambda for Lasso:", best.lambda.lasso, "\n")
+
+lasso.preds = predict(cv.lasso, s = best.lambda.lasso, newx = test.predictors)
+
+lasso.error = mean((test.response - lasso.preds)^2)
+cat("Test Error:", lasso.error, "\n")
+
+coef(cv.lasso, s = 'lambda.min')
+coef(cv.lasso, s = 'lambda.1se')
+```
+
+e\)
+
+```{r warning=FALSE}
+set.seed(42)
+
+pcr.fit = pcr(Apps ~ ., data = train.set, scale = TRUE, validation = 'CV')
+
+validationplot(pcr.fit, val.type = "MSEP")
+
+best.M.pcr = which.min(pcr.fit$validation$PRESS)
+cat("Best number of components for PCR: ", best.M.pcr, "\n")
+
+pcr.preds = predict(pcr.fit, test.set, ncomp = best.M.pcr)
+
+pcr.error = mean((test.response - pcr.preds)^2)
+cat("PCR Test Error: ", pcr.error, "\n")
+```
+
+f\)
+
+```{r}
+
+set.seed(42)
+pls.fit = plsr(Apps ~ ., data = train.set, scale = TRUE, validation = "CV")
+
+validationplot(pls.fit, val.type = "MSEP")
+
+best.M.pls = which.min(pls.fit$validation$PRESS)
+cat("Best number of components for PLS: ", best.M.pls, "\n")
+
+pls.preds = predict(pls.fit, test.set, ncomp = best.M.pls)
+
+pls.error = mean((test.response - pls.preds)^2)
+cat("PLS Test Error: ", pls.error, "\n")
+
+```
+
+```{r}
+cat("Ridge Regression Test Error: ", ridge.error, "\n")
+cat("Lasso Test Error: ", lasso.error, "\n")
+cat("PCR Test Error: ", pcr.error, "\n")
+cat("PLS Test Error: ", pls.error, "\n")
+
+
+```
+
+g\)
+
+The test errors for Ridge and Lasso are higher than those for PCR and PLS. Although Lasso is close. This is due to PCR and PLS reducing the dimensionality of the data. On the other hand, Ridge and Lasso retain most predictors which lilkely introduces noise causing the models to become more complex.
+
+Overall PCR and PLS test errors indicate they are significantly more accurate than Ridge and Lasso.
+
+### Problem 4
+
+We will now try to predict per capita crime rate in the Boston data set.
+
+a\)
+
+**Best Subset**
+
+```{r}
+set.seed(42)
+subset.bost = regsubsets(crim ~. , data = Boston, nvmax = length(Boston))
+subset.summary.bost = summary(subset.bost)
+subset.summary.bost
+
+adjr2.boston = subset.summary.bost$adjr2
+
+bost.model.adjr2 = coef(subset.bost, which.max(adjr2.boston))
+bost.model.adjr2
+```
+
+After performing an exhaustive search with all predictors being considered, the output displays the best model according to the adjusted $R^2$. \
+\
+**Lasso**
+
+```{r}
+set.seed(42)
+pMat = as.matrix(Boston)[,-1]
+rVec = Boston$crim
+
+boston.lasso.cv = cv.glmnet(pMat, rVec, alpha = 1)
+#summary(boston.lasso.cv)
+plot(boston.lasso.cv)
+
+#min lambda
+bost.lambdamin.lasso = boston.lasso.cv$lambda.min
+cat("Optimal lamdba:", bost.lambdamin.lasso, "\n")
+
+#1se lambda
+bost.lambda1se.lasso = boston.lasso.cv$lambda.1se
+cat("Max lamdba within 1se:", bost.lambda1se.lasso, "\n")
+
+lasso.opt = coef(boston.lasso.cv, s = 'lambda.min')
+lasso.1se = coef(boston.lasso.cv, s = 'lambda.1se')
+
+lasso.opt
+lasso.1se
+```
+
+An optimal $\lambda=0.03881179$ corresponding to the $\ell1$ - penalty term causes $\beta_\text{age} = 0$ effectively selecting all other $p=12$ predictors as their coefficients converge to a stable solution. This model balances the effects of the regularization.
+
+The maximum threshold is at $\lambda = 3.075768$ effectievly causing all coefficients to shrink to zero except $\beta_\text{rad}$.
+
+**Ridge**
+
+```{r}
+set.seed(42)
+boston.ridge.cv = cv.glmnet(pMat, rVec, alpha = 0)
+#summary(boston.ridge.cv)
+plot(boston.ridge.cv)
+
+bost.lambdamin.ridge = boston.ridge.cv$lambda.min
+cat("Optimal lamdba:", bost.lambdamin.ridge, "\n")
+
+bost.lambda1se.ridge = boston.ridge.cv$lambda.1se
+cat("Max lamdba within 1se:", bost.lambda1se.ridge, "\n")
+
+ridge.opt = coef(boston.ridge.cv, s = 'lambda.min')
+ridge.1se = coef(boston.ridge.cv, s = 'lambda.1se')
+
+ridge.opt
+ridge.1se
+```
+
+An optimal $\lambda=0.5374992$ corresponding to the $\ell2$ norm selects all $p=13$ predictors as they converge to a stable solution.
+
+The maximum threshold is at $\lambda = 51.3069$ having a similar effect as the optimal $\lambda$.
+
+**Principal Component Regression**
+
+```{r}
+set.seed(42)
+boston.pcr = pcr(crim ~ ., data = Boston, scale = TRUE, validation = "CV")
+summary(boston.pcr)
+validationplot(boston.pcr, val.type = "MSEP")
+
+```
+
+The validation plot along with the summary indicate that 3 or 4 components explain the amount of variance within the predictors and response.
+
+b\)
+
+I propose that Lasso with the optimal $\lambda$ seems to outperform the other three models due to it retaining most of the predictors and balancing complexity with interpretability.
+
+c\)
+
+My proposed model does not contain all predictors due to the effect of regularization on a seemingly insignificant attribute.
